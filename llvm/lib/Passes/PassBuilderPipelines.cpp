@@ -1664,13 +1664,15 @@ PassBuilder::buildPerModuleDefaultPipeline(OptimizationLevel Level,
       PGOOpt->Action == PGOOptions::SampleUse)
     MPM.addPass(PseudoProbeUpdatePass());
 
-  if (!isLTOPreLink(Phase))
-    MPM.addPass(ObfuscationPass());
+
 
   /* TO_UPSTREAM(BoundsSafety) ON */
   if (EnableLoopTrapAnalysis)
     MPM.addPass(createModuleToFunctionPassAdaptor(LoopTrapAnalysisPass()));
   /* TO_UPSTREAM(BoundsSafety) OFF */
+
+  if (!isLTOPreLink(Phase))
+    MPM.addPass(ObfuscationPass());
 
   // Emit annotation remarks.
   addAnnotationRemarksPass(MPM);
@@ -1769,9 +1771,6 @@ PassBuilder::buildThinLTOPreLinkDefaultPipeline(OptimizationLevel Level) {
                                   /*Phase=*/ThinOrFullLTOPhase::ThinLTOPreLink);
   invokeOptimizerLastEPCallbacks(MPM, Level,
                                  /*Phase=*/ThinOrFullLTOPhase::ThinLTOPreLink);
-
-  if (!isLTOPreLink(Phase))
-    MPM.addPass(ObfuscationPass());
 
   /* TO_UPSTREAM(BoundsSafety) ON */
   if (EnableLoopTrapAnalysis)
@@ -1886,12 +1885,12 @@ PassBuilder::buildLTODefaultPipeline(OptimizationLevel Level,
 
     invokeFullLinkTimeOptimizationLastEPCallbacks(MPM, Level);
 
-    MPM.addPass(ObfuscationPass());
-
     /* TO_UPSTREAM(BoundsSafety) ON */
     if (EnableLoopTrapAnalysis)
       MPM.addPass(createModuleToFunctionPassAdaptor(LoopTrapAnalysisPass()));
     /* TO_UPSTREAM(BoundsSafety) OFF */
+
+    MPM.addPass(ObfuscationPass());
 
     // Emit annotation remarks.
     addAnnotationRemarksPass(MPM);
@@ -1984,6 +1983,8 @@ PassBuilder::buildLTODefaultPipeline(OptimizationLevel Level,
       MPM.addPass(createModuleToFunctionPassAdaptor(LoopTrapAnalysisPass()));
     /* TO_UPSTREAM(BoundsSafety) OFF */
 
+    MPM.addPass(ObfuscationPass());
+    
     // Emit annotation remarks.
     addAnnotationRemarksPass(MPM);
 
@@ -2339,7 +2340,7 @@ PassBuilder::buildO0DefaultPipeline(OptimizationLevel Level,
 
   invokeOptimizerLastEPCallbacks(MPM, Level, Phase);
 
-  if (isLTOPreLink(Phase))
+  if (!isLTOPreLink(Phase))
     MPM.addPass(ObfuscationPass());
 
   if (isLTOPreLink(Phase))
