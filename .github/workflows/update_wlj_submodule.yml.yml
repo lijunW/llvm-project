@@ -8,24 +8,34 @@ on:
 jobs:
   update_submodules:
     runs-on: ubuntu-latest
+    # 添加必要的推送权限
+    permissions:
+      contents: write  # 必须赋予写入权限才能推送提交
     steps:
       - name: Checkout gitbutler_swiftMain0225
         uses: actions/checkout@v4.1.6
         with:
           ref: "gitbutler/swiftMain0225"
           submodules: "recursive"
-  
+          token: ${{ secrets.GITHUB_TOKEN }}  # 必须传递 token 才有写入权限
       - name: Update submodule gitbutler_swiftMain0225
         id: apple-arm64e
         run: |
+          # 更新子模块
           git submodule update --remote
+          # 配置 Git 身份（关键修复）
+          git config user.name "GitHub Actions Bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # 检查是否有修改
           if [ -n "$(git status --porcelain)" ]; then
-            echo "Some files have been modified"
+            echo "检测到子模块更新"
             echo "HAS_CHANGES=1" >> $GITHUB_OUTPUT
+            # 提交更改
             git add .
-            git commit -m "update submodule"
+            git commit -m "chore: auto-update submodules"
+          else
+            echo "无子模块更新"
           fi
-  
       - name: Push changes gitbutler_swiftMain0225
         if: ${{ steps.apple-arm64e.outputs.HAS_CHANGES == '1' }}
         uses: ad-m/github-push-action@master
