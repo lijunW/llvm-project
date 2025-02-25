@@ -147,6 +147,7 @@
 #include "llvm/Transforms/Vectorize/LoopVectorize.h"
 #include "llvm/Transforms/Vectorize/SLPVectorizer.h"
 #include "llvm/Transforms/Vectorize/VectorCombine.h"
+#include "llvm/Transforms/Obfuscation/Obfuscation.h"
 
 using namespace llvm;
 
@@ -1663,6 +1664,9 @@ PassBuilder::buildPerModuleDefaultPipeline(OptimizationLevel Level,
       PGOOpt->Action == PGOOptions::SampleUse)
     MPM.addPass(PseudoProbeUpdatePass());
 
+  if (!isLTOPreLink(Phase))
+    MPM.addPass(ObfuscationPass());
+
   /* TO_UPSTREAM(BoundsSafety) ON */
   if (EnableLoopTrapAnalysis)
     MPM.addPass(createModuleToFunctionPassAdaptor(LoopTrapAnalysisPass()));
@@ -1766,6 +1770,9 @@ PassBuilder::buildThinLTOPreLinkDefaultPipeline(OptimizationLevel Level) {
   invokeOptimizerLastEPCallbacks(MPM, Level,
                                  /*Phase=*/ThinOrFullLTOPhase::ThinLTOPreLink);
 
+  if (!isLTOPreLink(Phase))
+    MPM.addPass(ObfuscationPass());
+
   /* TO_UPSTREAM(BoundsSafety) ON */
   if (EnableLoopTrapAnalysis)
     MPM.addPass(createModuleToFunctionPassAdaptor(LoopTrapAnalysisPass()));
@@ -1819,6 +1826,7 @@ ModulePassManager PassBuilder::buildThinLTODefaultPipeline(
     // globals in the object file.
     MPM.addPass(EliminateAvailableExternallyPass());
     MPM.addPass(GlobalDCEPass());
+    MPM.addPass(ObfuscationPass());
     return MPM;
   }
   if (!UseCtxProfile.empty()) {
@@ -1831,12 +1839,14 @@ ModulePassManager PassBuilder::buildThinLTODefaultPipeline(
   }
   // Now add the optimization pipeline.
   MPM.addPass(buildModuleOptimizationPipeline(
-      Level, ThinOrFullLTOPhase::ThinLTOPostLink));
+      Level, ThinOrFullLTOPhase::ThinLTOPostLink))
 
   /* TO_UPSTREAM(BoundsSafety) ON */
   if (EnableLoopTrapAnalysis)
     MPM.addPass(createModuleToFunctionPassAdaptor(LoopTrapAnalysisPass()));
   /* TO_UPSTREAM(BoundsSafety) OFF */
+
+  MPM.addPass(ObfuscationPass());
 
   // Emit annotation remarks.
   addAnnotationRemarksPass(MPM);
@@ -1875,6 +1885,8 @@ PassBuilder::buildLTODefaultPipeline(OptimizationLevel Level,
     MPM.addPass(buildCoroWrapper(ThinOrFullLTOPhase::FullLTOPostLink));
 
     invokeFullLinkTimeOptimizationLastEPCallbacks(MPM, Level);
+
+    MPM.addPass(ObfuscationPass());
 
     /* TO_UPSTREAM(BoundsSafety) ON */
     if (EnableLoopTrapAnalysis)
@@ -2205,6 +2217,9 @@ PassBuilder::buildLTODefaultPipeline(OptimizationLevel Level,
   MPM.addPass(CoroCleanupPass());
 
   invokeFullLinkTimeOptimizationLastEPCallbacks(MPM, Level);
+
+  MPM.addPass(ObfuscationPass());
+
   if (EnableLoopTrapAnalysis)
     MPM.addPass(createModuleToFunctionPassAdaptor(LoopTrapAnalysisPass()));
 
@@ -2323,6 +2338,9 @@ PassBuilder::buildO0DefaultPipeline(OptimizationLevel Level,
   MPM.addPass(buildCoroWrapper(Phase));
 
   invokeOptimizerLastEPCallbacks(MPM, Level, Phase);
+
+  if (isLTOPreLink(Phase))
+    MPM.addPass(ObfuscationPass());
 
   if (isLTOPreLink(Phase))
     addRequiredLTOPreLinkPasses(MPM);
