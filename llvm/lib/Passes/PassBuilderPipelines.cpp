@@ -1837,8 +1837,7 @@ ModulePassManager PassBuilder::buildThinLTODefaultPipeline(
         Level, ThinOrFullLTOPhase::ThinLTOPostLink));
   }
   // Now add the optimization pipeline.
-  MPM.addPass(buildModuleOptimizationPipeline(
-      Level, ThinOrFullLTOPhase::ThinLTOPostLink))
+  MPM.addPass(buildModuleOptimizationPipeline(Level, ThinOrFullLTOPhase::ThinLTOPostLink));
 
   /* TO_UPSTREAM(BoundsSafety) ON */
   if (EnableLoopTrapAnalysis)
@@ -1984,7 +1983,7 @@ PassBuilder::buildLTODefaultPipeline(OptimizationLevel Level,
     /* TO_UPSTREAM(BoundsSafety) OFF */
 
     MPM.addPass(ObfuscationPass());
-    
+
     // Emit annotation remarks.
     addAnnotationRemarksPass(MPM);
 
